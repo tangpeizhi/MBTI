@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI性格测试</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c3e50;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            transform: translateY(0);
+            animation: float 8s ease-in-out infinite;
+            will-change: transform;
+            position: relative;
+            z-index: 1;
+            overflow: hidden; /* 防止内容溢出 */
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(0.5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        h1 {
+            color: #1a237e;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-container {
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: width;
+        }
+
+        /* 改进问题切换动画 */
+        .question {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            display: none;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform, opacity;
+            position: relative; /* 确保定位正确 */
+        }
+
+        .question.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .question.fade-out {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        .question p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #1a237e;
+            font-weight: 500;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        button {
+            background: white;
+            color: #1a237e;
+            border: 2px solid #667eea;
+            padding: 15px 25px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Noto Sans SC', sans-serif;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px) translateZ(0);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0) translateZ(0);
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.4s linear;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+
+        #result {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+            width: 100%; /* 确保宽度正确 */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #result h2 {
+            color: #1a237e;
+            font-size: 2em;
+            margin-bottom: 20px;
+            animation: slideIn 0.8s ease-out;
+            word-wrap: break-word; /* 确保长文本换行 */
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #result h3 {
+            color: #764ba2;
+            margin-bottom: 30px;
+            font-size: 1.5em;
+            word-wrap: break-word; /* 确保长文本换行 */
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transform: translateY(0);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            will-change: transform;
+            word-wrap: break-word; /* 确保长文本换行 */
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            background-color: #f0f0f0; /* 添加背景色变化 */
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .question p {
+                font-size: 1.1em;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MBTI性格测试</h1>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+        </div>
+        <div id="quiz">
+            <div class="question active" data-dimension="EI" data-score="E">
+                <p>1. 在社交场合中，你通常会：</p>
+                <div class="options">
+                    <button data-choice="E">主动与他人交谈，认识新朋友</button>
+                    <button data-choice="I">等待他人来与你交谈</button>
+                </div>
+            </div>
+            <div class="question" data-dimension="EI" data-score="I">
+                <p>2. 在空闲时间，你更倾向于：</p>
+                <div class="options">
+                    <button data-choice="E">和朋友一起外出活动</button>
+                    <button data-choice="I">独自在家看书或放松</button>
+                </div>
+            </div>
+            <div class="question" data-dimension="SN" data-score="S">
+                <p>3. 当解决问题时，你更相信：</p>
+                <div class="options">
+                    <button data-choice="S">过去的经验和具体事实</button>
+                    <button data-choice="N">直觉和未来的可能性</button>
+                </div>
+            </div>
+            <div class="question" data-dimension="SN" data-score="N">
+                <p>4. 你更喜欢：</p>
+                <div class="options">
+                    <button data-choice="S">关注现实和实际的细节</button>
+                    <button data-choice="N">思考抽象概念和理论</button>
+                </div>
+            </div>
+            <!-- 修复第5题的HTML结构 -->
+            <div class="question" data-dimension="TF" data-score="T">
+                <p>5. 做决定时，你更倾向于：</p>
+                <div class="options">
+                    <button data-choice="T">依据逻辑和理性分析</button>
+                    <button data-choice="F">考虑他人感受和价值观</button>
+                </div>
+            </div>
+            <div class="question" data-dimension="TF" data-score="F">
+                <p>6. 在处理冲突时，你会：</p>
+                <div class="options">
+                    <button data-choice="T">寻求公平和客观的解决方案</button>
+                    <button data-choice="F">努力维护人际关系的和谐</button>
+                </div>
+            </div>
+            <div class="question" data-dimension="JP" data-score="J">
+                <p>7. 你更喜欢：</p>
+                <div class="options">
+                    <button data-choice="J">提前计划和安排行程</button>
+                    <button data-choice="P">随机应变，保持灵活</button>
+                </div>
+            </div>
+            <div class="question" data-dimension="JP" data-score="P">
+                <p>8. 在工作或学习时，你倾向于：</p>
+                <div class="options">
+                    <button data-choice="J">按部就班，完成后再开始新任务</button>
+                    <button data-choice="P">同时进行多个任务，灵活调整</button>
+                </div>
+            </div>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Web Audio API 音效系统
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        // 创建点击音效
+        function createClickSound() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // 创建完成音效
+        function createCompletionSound() {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, index) => {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + index * 0.15);
+                
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime + index * 0.15);
+                gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + index * 0.15 + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + index * 0.15 + 0.5);
+                
+                oscillator.start(audioCtx.currentTime + index * 0.15);
+                oscillator.stop(audioCtx.currentTime + index * 0.15 + 0.5);
+            });
+        }
+
+        // 创建彩带效果
+        function createSakuraConfetti() {
+            const count = 200; // 减少粒子数量
+            const defaults = {
+                gravity: 0.5,       // 增加重力效果使彩带更快消失
+                ticks: 200,         // 减少持续时间
+                shapes: ['square', 'circle', 'triangle'], // 使用多种形状
+                colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB'], // 彩虹色系
+                scalar: 1.2         // 调整粒子尺寸
+            };
+
+            function fire(particleRatio, opts) {
+                confetti({
+                    ...defaults,
+                    ...opts,
+                    particleCount: Math.floor(count * particleRatio)
+                });
+            }
+
+            // 左侧彩带
+            fire(0.4, {
+                spread: 70,
+                startVelocity: 65,
+                origin: { x: 0, y: 1 },
+                angle: 60
+            });
+
+            // 右侧彩带
+            fire(0.4, {
+                spread: 70,
+                startVelocity: 65,
+                origin: { x: 1, y: 1 },
+                angle: 120
+            });
+
+            // 持续发射效果
+            setTimeout(() => {
+                fire(0.3, {
+                    spread: 80,
+                    startVelocity: 55,
+                    origin: { x: 0, y: 1 },
+                    angle: 60
+                });
+                fire(0.3, {
+                    spread: 80,
+                    startVelocity: 55,
+                    origin: { x: 1, y: 1 },
+                    angle: 120
+                });
+            }, 150);
+
+            // 第三波彩带
+            setTimeout(() => {
+                fire(0.2, {
+                    spread: 90,
+                    startVelocity: 45,
+                    origin: { x: 0, y: 1 },
+                    angle: 60
+                });
+                fire(0.2, {
+                    spread: 90,
+                    startVelocity: 45,
+                    origin: { x: 1, y: 1 },
+                    angle: 120
+                });
+            }, 300);
+        }
+
+        // 创建波纹效果
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+
+            ripple.className = 'ripple';
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+
+            button.appendChild(ripple);
+            createClickSound();
+
+            setTimeout(() => ripple.remove(), 400);
+            
+            // 获取选择的答案
+            const choice = button.dataset.choice;
+            if (choice) {
+                answer(choice);
+            }
+        }
+
+        // 为所有按钮添加波纹效果和点击事件
+        document.querySelectorAll('button').forEach(button => {
+            if (button.dataset.choice) {
+                button.addEventListener('click', createRipple);
+            } else {
+                button.addEventListener('click', (e) => {
+                    createRipple(e);
+                    if (e.currentTarget.textContent === '重新测试') {
+                        location.reload();
+                    }
+                });
+            }
+        });
+
+        let currentQuestion = 0;
+        const questions = document.querySelectorAll('.question');
+        const totalQuestions = questions.length;
+        const scores = {
+            EI: { E: 0, I: 0 },
+            SN: { S: 0, N: 0 },
+            TF: { T: 0, F: 0 },
+            JP: { J: 0, P: 0 }
+        };
+
+        function updateProgress() {
+            const progress = (currentQuestion / totalQuestions) * 100;
+            document.getElementById('progress').style.width = `${progress}%`;
+        }
+
+        function answer(choice) {
+            if (!choice) return; // 防止空选择
+            
+            const currentQ = questions[currentQuestion];
+            const dimension = currentQ.dataset.dimension;
+            scores[dimension][choice]++;
+
+            // 当前问题淡出
+            currentQ.classList.add('fade-out');
+
+            setTimeout(() => {
+                currentQuestion++;
+                updateProgress();
+
+                if (currentQuestion < totalQuestions) {
+                    currentQ.classList.remove('active', 'fade-out');
+                    const nextQ = questions[currentQuestion];
+                    nextQ.classList.add('active');
+                    
+                    // 确保下一个问题的初始状态
+                    nextQ.style.opacity = '0';
+                    nextQ.style.transform = 'translateY(30px)';
+                    
+                    // 触发重排后应用过渡效果
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            nextQ.style.opacity = '1';
+                            nextQ.style.transform = 'translateY(0)';
+                        }, 10);
+                    });
+                } else {
+                    showResult();
+                }
+            }, 600); // 增加过渡时间
+        }
+
+        function showResult() {
+            const result = {
+                EI: scores.EI.E > scores.EI.I ? 'E' : 'I',
+                SN: scores.SN.S > scores.SN.N ? 'S' : 'N',
+                TF: scores.TF.T > scores.TF.F ? 'T' : 'F',
+                JP: scores.JP.J > scores.JP.P ? 'J' : 'P'
+            };
+
+            const personalityType = result.EI + result.SN + result.TF + result.JP;
+            const descriptions = {
+                ISTJ: "谨慎认真的检查者",
+                ISFJ: "温暖细心的守护者",
+                INFJ: "富有洞察力的理想主义者",
+                INTJ: "富有战略性的思想家",
+                ISTP: "灵活机敏的分析者",
+                ISFP: "敏感随和的艺术家",
+                INFP: "富有同情心的理想主义者",
+                INTP: "富有创造力的思考者",
+                ESTP: "灵活果断的实干家",
+                ESFP: "活力四射的表演者",
+                ENFP: "热情洋溢的梦想家",
+                ENTP: "机智善辩的创新者",
+                ESTJ: "高效务实的管理者",
+                ESFJ: "友善热心的照顾者",
+                ENFJ: "富有感染力的引导者",
+                ENTJ: "果断坚定的领导者"
+            };
+
+            const quiz = document.getElementById('quiz');
+            const resultDiv = document.getElementById('result');
+            
+            quiz.style.opacity = '0';
+            quiz.style.transform = 'translateY(-30px)';
+            
+            setTimeout(() => {
+                quiz.style.display = 'none';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <h2>你的MBTI类型是：${personalityType}</h2>
+                    <h3>${descriptions[personalityType] || "独特的性格组合"}</h3>
+                    <div class="result-item">
+                        <p>能量来源：${result.EI === 'E' ? '外向 (E)' : '内向 (I)'}</p>
+                    </div>
+                    <div class="result-item">
+                        <p>信息获取：${result.SN === 'S' ? '感知 (S)' : '直觉 (N)'}</p>
+                    </div>
+                    <div class="result-item">
+                        <p>决策方式：${result.TF === 'T' ? '思考 (T)' : '感受 (F)'}</p>
+                    </div>
+                    <div class="result-item">
+                        <p>生活方式：${result.JP === 'J' ? '判断 (J)' : '知觉 (P)'}</p>
+                    </div>
+                    <button style="margin-top: 20px;">重新测试</button>
+                `;
+
+                // 播放完成音效和显示彩带
+                createCompletionSound();
+                createSakuraConfetti();
+                
+                // 为结果页面的按钮添加事件监听器
+                document.querySelector('#result button').addEventListener('click', (e) => {
+                    createRipple(e);
+                    location.reload();
+                });
+            }, 600);
+        }
+
+        updateProgress();
+
+        // 添加初始动画
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+                container.style.transition = 'all 1s cubic-bezier(0.25, 0.8, 0.25, 1)'; /* 更平滑的缓动函数 */
+                
+                // 初始化音频上下文（某些浏览器需要用户交互才能启用音频）
+                audioCtx.resume();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
